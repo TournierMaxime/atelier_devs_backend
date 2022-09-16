@@ -5,15 +5,25 @@ const cryptojs = require("crypto-js");
 // ============================================================
 // ------------------------- Variables --------------------------
 
-const EMAIL_CRYPTOJS_KEY = process.env.EMAIL_CRYPTOJS_KEY;
-
+const key = cryptojs.enc.Hex.parse(process.env.EMAIL_CRYPTOJS_KEY);
+const iv = cryptojs.enc.Hex.parse(process.env.EMAIL_CRYPTOJS_IV);
 // ---------------------- Crypto functions -------------------------
 
 const encryptEmail = (email) => {
-  return cryptojs.HmacSHA256(email, EMAIL_CRYPTOJS_KEY).toString();
+  return cryptojs.AES.encrypt(email, key, { iv: iv }).toString();
 };
+
+const decryptEmail = (email) => {
+  return cryptojs.AES.decrypt(email, key, { iv: iv }).toString(
+    cryptojs.enc.Utf8
+  );
+};
+
+/*const encryptEmail = (email) => {
+  return cryptojs.HmacSHA256(email, EMAIL_CRYPTOJS_KEY).toString();
+};*/
 
 // ============================================================
 // ------------------------- EXPORT ---------------------------
 
-module.exports = { encryptEmail };
+module.exports = { encryptEmail, decryptEmail };
