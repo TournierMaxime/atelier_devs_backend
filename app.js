@@ -16,9 +16,9 @@ const postsRoutes = require("./routes/posts.js");
 const app = express();
 //Protection des en-tetes headers
 app.use(helmet());
-/*app.use(helmet.crossOriginResourcePolicy());
+app.use(helmet.crossOriginResourcePolicy());
 app.use(helmet.crossOriginResourcePolicy({ policy: "same-site" }));
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));*/
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
 //CORS
 app.use(cors());
