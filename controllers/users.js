@@ -7,7 +7,7 @@ const Posts = require("../models/Posts.js")(sequelize, DataTypes);
 const Comments = require("../models/Comments.js")(sequelize, DataTypes);
 const bcrypt = require("bcrypt");
 const fs = require("fs");
-const { encryptEmail } = require("../middlewares/crypto.js");
+const { encryptEmail, decryptEmail } = require("../middlewares/crypto.js");
 const regex = require("../functions/regex.js");
 //Edition d'un utilisateur
 exports.editUser = (req, res, next) => {
@@ -20,15 +20,30 @@ exports.editUser = (req, res, next) => {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
 
-      regex.testFirstName;
-      //testLastName(req.body.lastname);
+      if (
+        regex.testFirstName(req.body.firstname) === false ||
+        req.body.firstname === ""
+      ) {
+        return res.status(400).send({
+          error: `Merci de vérifier votre prénom, 3 caractères minimum requis avec des lettres uniquement`,
+        });
+      }
+
+      if (
+        regex.testLastName(req.body.lastname) === false ||
+        req.body.lastname === ""
+      ) {
+        return res.status(400).send({
+          error: `Merci de vérifier votre nom, 3 caractères minimum requis avec des lettres uniquement`,
+        });
+      }
 
       const userObject = req.file
         ? //Si édition du profil avec un fichier image
           {
             firstname: req.body.firstname,
             lastname: req.body.lastname,
-            image: `${req.protocol}://${req.get("host")}/images/${
+            image: `${req.protocol}://${req.get("host")}/images/user/${
               req.file.filename
             }`,
           }
@@ -64,11 +79,19 @@ exports.getOneUser = (req, res, next) => {
   Users.hasMany(Comments);
   const options = {
     where: { id: req.params.id },
-    attributes: ["id", "firstname", "lastname", "image", "isAdmin", "created"],
+    attributes: [
+      "id",
+      "firstname",
+      "lastname",
+      "email",
+      "image",
+      "isAdmin",
+      "created",
+    ],
     include: [
       {
         model: Posts,
-        attributes: ["id", "message", "image", "created", "updated"],
+        attributes: ["id", "title", "message", "image", "created", "updated"],
       },
       {
         model: Comments,
@@ -78,6 +101,9 @@ exports.getOneUser = (req, res, next) => {
   };
   Users.findOne(options)
     .then((user) => {
+      if (!user) {
+        return res.status(200).send({ message: "Aucune donnée" });
+      }
       res.status(200).send({ user });
     })
     .catch(() => {
@@ -96,7 +122,7 @@ exports.getAllUsers = (req, res, next) => {
     include: [
       {
         model: Posts,
-        attributes: ["id", "message", "image", "created", "updated"],
+        attributes: ["id", "title", "message", "image", "created", "updated"],
       },
       {
         model: Comments,
@@ -136,7 +162,7 @@ exports.deleteOneUser = (req, res, next) => {
             .then(() =>
               Users.findOne({ where: { id: req.params.id } }).then((user) => {
                 const filename = user.image;
-                fs.unlink(`images/${filename}`, () => {
+                fs.unlink(`images/user/${filename}`, () => {
                   Users.destroy({ where: { id: req.params.id } }).then(() =>
                     res.status(200).json({ message: "Compte supprimé !" })
                   );
@@ -160,7 +186,11 @@ exports.setEmail = (req, res, next) => {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
 
-      testEmail(req.body.email);
+      if (regex.testEmail(req.body.email) === false || req.body.email === "") {
+        return res.status(400).send({
+          error: `Merci de vérifier votre email, format invalide`,
+        });
+      }
 
       const emailObject = {
         email: encryptEmail(req.body.email),
@@ -194,7 +224,14 @@ exports.setPassword = (req, res, next) => {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
 
-      testPassword(req.body.password);
+      if (
+        regex.testPassword(req.body.password) === false ||
+        req.body.password === ""
+      ) {
+        return res.status(400).send({
+          error: `Le mot de passe doit contenir au moins : 8 caractères minimum, une majuscule, une minuscule, un chiffre, et un caractère spécial`,
+        });
+      }
 
       const setPassword = {
         password: req.body.password,
