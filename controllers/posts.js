@@ -38,6 +38,16 @@ exports.createPost = (req, res, next) => {
 };
 //Récupère tous les posts
 exports.getAllPosts = (req, res, next) => {
+  const pageAsNumber = Number(req.query.page);
+  const sizeAsNumber = Number(req.query.size);
+  let page = 0;
+  let size = 5;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
+  if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 5) {
+    size = sizeAsNumber;
+  }
   //Jointure des tables Users et Posts
   Posts.belongsTo(Users);
   Comments.belongsTo(Posts);
@@ -45,6 +55,10 @@ exports.getAllPosts = (req, res, next) => {
   Posts.hasMany(Comments);
   //Utilisation des datas Posts et Users
   const options = {
+    distinct: true,
+    subQuery: false,
+    limit: size,
+    offset: (page - 1) * size,
     order: [["id", "DESC"]],
     attributes: ["id", "title", "message", "image", "userId", "created"],
     include: [
@@ -57,9 +71,13 @@ exports.getAllPosts = (req, res, next) => {
       },
     ],
   };
-  Posts.findAll(options)
+  Posts.findAndCountAll(options)
     .then((posts) => {
-      res.status(200).json({ posts });
+      res.status(200).json({
+        posts,
+        currentPage: page,
+        totalPages: Math.ceil(posts.count / size),
+      });
     })
     .catch(() => {
       res.status(404).json({ error: "Impossible de retrouver les posts" });
