@@ -15,6 +15,11 @@ const sequelize = new Sequelize(
     dialect: process.env.DIALECT,
     port: process.env.PORT_SQL,
     logging: false,
+    /*pool: {
+      max: 5,
+      min: 0,
+      idle: 10000,
+    },*/
   }
 );
 //Utilisation des modèles pour la sync
