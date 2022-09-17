@@ -22,13 +22,16 @@ const storage = multer.diskStorage({
     const pathRoute = req.originalUrl;
     //On supprime l'extension de fichier
     const nameUserId = req.params.id;
-    const namePostTitle = req.body.title.split(" ").join("-");
+    const namePostTitle = req.body.title;
     //On vérifie si l'extension est acceptée
     const extension = MIME_TYPES[file.mimetype];
     //photo_date.extension
-    pathRoute === `/api/users/${req.params.id}`
-      ? callback(null, nameUserId + "." + extension)
-      : callback(null, namePostTitle + "." + extension);
+    if (pathRoute === `/api/users/${req.params.id}`) {
+      callback(null, nameUserId + "." + extension);
+    }
+    if (pathRoute === `/api/posts/new`) {
+      callback(null, namePostTitle.split(" ").join("-") + "." + extension);
+    }
   },
 });
 
