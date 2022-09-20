@@ -10,6 +10,10 @@ exports.createComment = (req, res, next) => {
   //Jointure de Comments et Users
   Comments.belongsTo(Users);
   Users.hasMany(Comments);
+
+  if (req.body.message === "") {
+    return res.status(400).json({ error: "Votre commentaire est vide" });
+  }
   //Création des objets
   Comments.create({
     message: req.body.message,
@@ -27,12 +31,26 @@ exports.createComment = (req, res, next) => {
 };
 //Récupération de tous les commentaires d'un membre
 exports.getAllComments = (req, res, next) => {
+  const pageAsNumber = Number(req.query.page);
+  const sizeAsNumber = Number(req.query.size);
+  let page = 0;
+  let size = 10;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber >= 0) {
+    page = pageAsNumber;
+  }
+  if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 10) {
+    size = sizeAsNumber;
+  }
   //Jointure de Comments et Users
   Comments.belongsTo(Users);
   Users.hasMany(Comments);
   //Data qui seront retournées
   const options = {
     where: { postId: req.params.postId },
+    distinct: true,
+    subQuery: false,
+    limit: size,
+    offset: (page - 1) * size,
     order: [["id", "DESC"]],
     attributes: ["id", "userId", "postId", "message", "created"],
     include: {
@@ -41,9 +59,13 @@ exports.getAllComments = (req, res, next) => {
     },
   };
   //Récupération des commentaires
-  Comments.findAll(options)
+  Comments.findAndCountAll(options)
     .then((comments) => {
-      res.status(200).json(comments);
+      res.status(200).json({
+        comments,
+        currentPage: page,
+        totalPages: Math.ceil(comments.count / size),
+      });
     })
     .catch(() => {
       res
@@ -67,10 +89,13 @@ exports.getOneComment = (req, res, next) => {
   };
   Comments.findOne(options)
     .then((comment) => {
+      if (!comment) {
+        return res.status(404).json({ error: "Commentaire non trouvé" });
+      }
       res.status(200).json(comment);
     })
-    .catch(() => {
-      res.status(404).json({ error: "Commentaire non trouvé" });
+    .catch((error) => {
+      res.status(500).json(error);
     });
 };
 //Edition d'un commentaire
@@ -80,6 +105,9 @@ exports.editComment = (req, res, next) => {
       //Si l'utilisateur n'est pas l'auteur du commentaire = 403
       if (comment.userId !== req.auth.userId) {
         return res.status(403).json({ error: "Accès non autorisé" });
+      }
+      if (req.body.message === "") {
+        return res.status(400).json({ error: "Votre commentaire est vide" });
       }
       //Maj du commentaire
       comment
