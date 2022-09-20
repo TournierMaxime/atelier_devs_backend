@@ -79,15 +79,7 @@ exports.getOneUser = (req, res, next) => {
   Users.hasMany(Comments);
   const options = {
     where: { id: req.params.id },
-    attributes: [
-      "id",
-      "firstname",
-      "lastname",
-      "email",
-      "image",
-      "isAdmin",
-      "created",
-    ],
+    attributes: ["id", "firstname", "lastname", "image", "isAdmin", "created"],
     include: [
       {
         model: Posts,
@@ -112,6 +104,16 @@ exports.getOneUser = (req, res, next) => {
 };
 //Recherche de plusieurs utilisateurs
 exports.getAllUsers = (req, res, next) => {
+  const pageAsNumber = Number(req.query.page);
+  const sizeAsNumber = Number(req.query.size);
+  let page = 0;
+  let size = 10;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
+  if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 10) {
+    size = sizeAsNumber;
+  }
   Posts.belongsTo(Users);
   Comments.belongsTo(Users);
   Users.hasMany(Posts);
@@ -119,7 +121,7 @@ exports.getAllUsers = (req, res, next) => {
   const options = {
     order: [["id", "DESC"]],
     attributes: ["id", "firstname", "lastname", "image", "isAdmin", "created"],
-    include: [
+    /*include: [
       {
         model: Posts,
         attributes: ["id", "title", "message", "image", "created", "updated"],
@@ -128,12 +130,16 @@ exports.getAllUsers = (req, res, next) => {
         model: Comments,
         attributes: ["id", "postId", "message", "created", "updated"],
       },
-    ],
+    ],*/
   };
 
-  Users.findAll(options)
+  Users.findAndCountAll(options)
     .then((users) => {
-      res.status(200).json({ users });
+      res.status(200).json({
+        users,
+        currentPage: page,
+        totalPages: Math.ceil(users.count / size),
+      });
     })
     .catch(() =>
       res.status(404).json({ error: "Impossible de trouver les utilisateurs" })
@@ -147,29 +153,28 @@ exports.deleteOneUser = (req, res, next) => {
     .then((user) => {
       if (user.id !== req.auth.userId && req.auth.isAdmin === false) {
         return res.status(403).json({ error: "Accès non autorisé" });
-      } else {
-        Comments.destroy({ where: { userId: req.params.id } }).then(() =>
-          Posts.findAll({ where: { userId: req.params.id } })
-            .then((posts) => {
-              posts.forEach((post) => {
-                Comments.destroy({ where: { postId: post.id } });
-                const filename = post.image;
-                fs.unlink(`images/${filename}`, () => {
-                  Posts.destroy({ where: { id: post.id } });
-                });
+      }
+      if (user.id === req.auth.userId || req.auth.isAdmin === true) {
+        Posts.findAll({ where: { userId: req.params.id } })
+          .then((posts) => {
+            posts.forEach((post) => {
+              Comments.destroy({ where: { postId: post.id } });
+              const filename = post.image;
+              fs.unlink(`images/post/${filename}`, () => {
+                Posts.destroy({ where: { id: post.id } });
+              });
+            });
+          })
+          .then(() =>
+            Users.findOne({ where: { id: req.params.id } }).then((user) => {
+              const filename = user.image;
+              fs.unlink(`images/user/${filename}`, () => {
+                Users.destroy({ where: { id: req.params.id } }).then(() =>
+                  res.status(200).json({ message: "Compte supprimé !" })
+                );
               });
             })
-            .then(() =>
-              Users.findOne({ where: { id: req.params.id } }).then((user) => {
-                const filename = user.image;
-                fs.unlink(`images/user/${filename}`, () => {
-                  Users.destroy({ where: { id: req.params.id } }).then(() =>
-                    res.status(200).json({ message: "Compte supprimé !" })
-                  );
-                });
-              })
-            )
-        );
+          );
       }
     })
 
