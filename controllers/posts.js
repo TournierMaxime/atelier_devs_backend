@@ -13,6 +13,12 @@ exports.createPost = (req, res, next) => {
   Posts.belongsTo(Users);
   Users.hasMany(Posts);
 
+  if (req.body.title === "" || req.body.message === "") {
+    return res.status(400).json({
+      error: "Le titre et le contenu du post n'ont pas été renseignés",
+    });
+  }
+
   //Si l'utilisateur décide d'importer un image
   const postObject = req.file
     ? {
@@ -41,11 +47,11 @@ exports.getAllPosts = (req, res, next) => {
   const pageAsNumber = Number(req.query.page);
   const sizeAsNumber = Number(req.query.size);
   let page = 0;
-  let size = 5;
-  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+  let size = 10;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber >= 0) {
     page = pageAsNumber;
   }
-  if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 5) {
+  if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 10) {
     size = sizeAsNumber;
   }
   //Jointure des tables Users et Posts
@@ -66,9 +72,9 @@ exports.getAllPosts = (req, res, next) => {
         model: Users,
         attributes: ["firstname", "image"],
       },
-      {
+      /*{
         model: Comments,
-      },
+      },*/
     ],
   };
   Posts.findAndCountAll(options)
@@ -127,6 +133,12 @@ exports.editPost = (req, res, next) => {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
 
+      if (req.body.title === "" || req.body.message === "") {
+        return res.status(400).json({
+          error: "Le titre et le contenu du post n'ont pas été renseignés",
+        });
+      }
+
       //Si ajout d'un fichier
       const postObject = req.file
         ? {
@@ -139,9 +151,9 @@ exports.editPost = (req, res, next) => {
         : { ...req.body };
 
       //Maj du post
-      post
-        .update({ ...postObject, id: req.params.id })
-        .then(() => res.status(200).json({ message: "Post modifié" }));
+      post.update({ ...postObject, id: req.params.id }).then(() => {
+        res.status(200).json({ message: "Post modifié" });
+      });
     })
     .catch((error) => {
       res.status(404).json({ error });
