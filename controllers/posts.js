@@ -170,7 +170,7 @@ exports.deletePost = (req, res, next) => {
             return res.status(403).json({ error: "Accès non autorisé" });
           }
           //Suppression de l'image dans le dossier images
-          if (post.image) {
+          if (post.image !== "") {
             const filename = post.image.split("/images/post/")[1];
             fs.unlink(`images/post/${filename}`, () => {
               //Suppression du post

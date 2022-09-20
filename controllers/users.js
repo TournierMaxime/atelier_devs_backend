@@ -159,7 +159,7 @@ exports.deleteOneUser = (req, res, next) => {
           .then((posts) => {
             posts.forEach((post) => {
               Comments.destroy({ where: { postId: post.id } });
-              const filename = post.image;
+              const filename = post.image.split("/images/post/")[1];
               fs.unlink(`images/post/${filename}`, () => {
                 Posts.destroy({ where: { id: post.id } });
               });
@@ -167,12 +167,22 @@ exports.deleteOneUser = (req, res, next) => {
           })
           .then(() =>
             Users.findOne({ where: { id: req.params.id } }).then((user) => {
-              const filename = user.image;
-              fs.unlink(`images/user/${filename}`, () => {
-                Users.destroy({ where: { id: req.params.id } }).then(() =>
-                  res.status(200).json({ message: "Compte supprimé !" })
-                );
-              });
+              if (user.image !== "") {
+                const filename = user.image.split("/images/user/")[1];
+                fs.unlink(`images/user/${filename}`, () => {
+                  user
+                    .destroy({ where: { id: req.params.id } })
+                    .then(() =>
+                      res.status(200).json({ message: "Compte supprimé !" })
+                    );
+                });
+              } else {
+                user
+                  .destroy({ where: { id: req.params.id } })
+                  .then(() =>
+                    res.status(200).json({ message: "Compte supprimé !" })
+                  );
+              }
             })
           );
       }
