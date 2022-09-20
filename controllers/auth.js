@@ -158,7 +158,7 @@ exports.login = (req, res, next) => {
             ),
           });
         })
-        .catch((error) => res.status(500).json({ error }));
+        .catch((error) => res.status(400).json({ error }));
     })
     //Gestion de l'erreur en 500 (server response)
     .catch((error) => res.status(500).json({ error }));
@@ -189,9 +189,9 @@ exports.confirmEmail = (req, res) => {
         .then(() =>
           res.status(200).json({ message: emailSignup.messages.confirmed })
         )
-        .catch((err) => console.log(err));
+        .catch((error) => res.status(400).json({ error }));
     })
-    .catch((err) => console.log(err));
+    .catch((error) => res.status(500).json({ error }));
 };
 
 //Fonction login
