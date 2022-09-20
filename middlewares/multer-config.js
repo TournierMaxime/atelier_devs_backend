@@ -32,6 +32,9 @@ const storage = multer.diskStorage({
     if (pathRoute === `/api/posts/new`) {
       callback(null, namePostTitle.split(" ").join("-") + "." + extension);
     }
+    if (pathRoute === `/api/posts/${req.params.id}`) {
+      callback(null, namePostTitle.split(" ").join("-") + "." + extension);
+    }
   },
 });
 
@@ -43,7 +46,7 @@ const upload = multer({
     const ext = file.mimetype.split("/")[1];
     const regExt = /^png|jpg|jpeg$/;
     if (regExt.test(ext)) cb(null, true);
-    if (!regExt.test(ext)) cb({ message: "Type de fichier non accepté" });
+    if (!regExt.test(ext)) cb({ error: "Type de fichier non accepté" });
   },
 
   // on impose une limite de taille à l'image de 3mo
