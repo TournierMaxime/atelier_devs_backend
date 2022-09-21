@@ -1,10 +1,10 @@
+//Imports
 const dotenv = require("dotenv");
 dotenv.config();
 const { Sequelize, DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-//const schemaPassword = require("../models/passwordValidator.js");
 const User = require("../models/Users.js")(sequelize, DataTypes);
 const Token = require("../models/Token.js")(sequelize, DataTypes);
 const fs = require("fs");
@@ -15,13 +15,13 @@ const emailSignup = require("../middlewares/emailSignup.js");
 const emailResetPassword = require("../middlewares/emailResetPassword.js");
 const moment = require("moment");
 
-//Fonction signup
+//SignUp form
 exports.signup = (req, res, next) => {
   User.findOne({
     where: { email: req.body.email },
   })
     .then((user) => {
-      //Vérification des champs + regex
+      //Regex checks
       if (
         req.body.firstname === "" &&
         req.body.lastname === "" &&
@@ -65,8 +65,9 @@ exports.signup = (req, res, next) => {
           error: `Le mot de passe doit contenir au moins : 8 caractères minimum, une majuscule, une minuscule, un chiffre, et un caractère spécial`,
         });
       }
+
+      //Check if the user is not in database
       if (!user) {
-        //On rentre les différents champs en bdd
         bcrypt.hash(req.body.password, 10).then((hash) => {
           User.create({
             firstname: req.body.firstname,
@@ -113,38 +114,38 @@ exports.signup = (req, res, next) => {
     .catch((error) => res.status(500).json({ error }));
 };
 
-//Fonction login
+//Login form
 exports.login = (req, res, next) => {
-  //Recherche de User dans la bdd
+  //Check if the user is in database
   User.findOne({
     where: {
       email: encryptEmail(req.body.email),
     },
   })
-    //Si non trouvé 401
     .then((user) => {
+      //If not 401
       if (!user) {
         return res
           .status(401)
           .send({ error: `Adresse mail ou mot de passe incorrect` });
       }
-
+      //If not confirmed 401
       if (user.isConfirmed === false) {
         return res
           .status(401)
           .send({ error: `Votre compte n'est pas confirmé` });
       }
-      //Utilisation de bcrypt pour la comparaison du mot de passe
+
       bcrypt
         .compare(req.body.password, user.password)
-        //Si invalide 401
         .then((valid) => {
+          //If datas are not valid
           if (!valid) {
             return res
               .status(401)
               .send({ error: `Adresse mail ou mot de passe incorrect` });
           }
-          //sinon 200 + création d'un token valable 1 semaine
+          //If succes token creation + access
           const maxAge = 1 * (168 * 60 * 60 * 1000);
           res.status(200).json({
             userId: user.id,
@@ -160,30 +161,26 @@ exports.login = (req, res, next) => {
         })
         .catch((error) => res.status(400).json({ error }));
     })
-    //Gestion de l'erreur en 500 (server response)
     .catch((error) => res.status(500).json({ error }));
 };
 
-// The callback that is invoked when the user visits the confirmation
-// url on the client and a fetch request is sent in componentDidMount.
+//Confirm account
 exports.confirmEmail = (req, res) => {
   User.findOne({ where: { id: req.params.id } })
     .then((user) => {
-      // A user with that id does not exist in the DB. Perhaps some tricky
-      // user tried to go to a different url than the one provided in the
-      // confirmation email.
+      //If not present in database
       if (!user) {
         return res
           .status(200)
           .json({ message: emailSignup.messages.couldNotFind });
       }
-
+      //If already confirmed
       if (user.isConfirmed === true) {
         return res
           .status(200)
           .json({ message: emailSignup.messages.alreadyConfirmed });
       }
-
+      //If confirmed value passed to true
       user
         .update({ isConfirmed: true }, { where: { id: req.params.id } })
         .then(() =>
@@ -194,20 +191,20 @@ exports.confirmEmail = (req, res) => {
     .catch((error) => res.status(500).json({ error }));
 };
 
-//Fonction login
+//Reset password email
 exports.emailResetPassword = (req, res, next) => {
-  //Recherche de User dans la bdd
+  //Check if the user is in database
   User.findOne({
     where: {
       email: encryptEmail(req.body.email),
     },
   })
-    //Si non trouvé 401
     .then((user) => {
+      //If not in database
       if (!user) {
         return res.status(401).send({ error: `Adresse mail incorrect` });
       }
-
+      //Else creation of a token for 1 hour
       Token.create({
         userId: user.id,
         token: jwt.sign({ userId: user.id }, process.env.TOKEN_KEY, {
@@ -224,16 +221,16 @@ exports.emailResetPassword = (req, res, next) => {
           res.status(201).json({ message: emailResetPassword.messages.confirm })
         );
     })
-    //Gestion de l'erreur en 404 (server response)
     .catch((error) => res.status(404).json({ error }));
 };
 
-//Recherche d'un utilisateur
+//Reset password page
 exports.getResetPassword = (req, res, next) => {
   Token.findOne({
     where: { id: req.params.id },
   })
     .then((token) => {
+      //If token not in database
       if (!token) {
         return res.status(404).json({ error: "Aucune donnée" });
       }
@@ -244,16 +241,19 @@ exports.getResetPassword = (req, res, next) => {
     });
 };
 
+//Reset password form
 exports.resetPassword = (req, res, next) => {
   Token.findOne({
     where: { id: req.params.id },
   })
     .then((user) => {
+      //If not in database
       if (!user) {
         return res
           .status(200)
           .json({ message: emailResetPassword.messages.couldNotFind });
       }
+      //Regex check
       if (
         regex.testPassword(req.body.password) === false ||
         req.body.password === ""
@@ -262,19 +262,19 @@ exports.resetPassword = (req, res, next) => {
           error: `Le mot de passe doit contenir au moins : 8 caractères minimum, une majuscule, une minuscule, un chiffre, et un caractère spécial`,
         });
       }
-
+      //If 1 hour has spent, destruction of the token
       if (moment().format() > moment(user.creation).add(1, "h").format()) {
         Token.destroy({ where: { id: req.params.id } });
         return res
           .status(400)
           .json({ message: emailResetPassword.messages.expire });
       }
-
+      //Object password
       const setPassword = {
         password: req.body.password,
         confirmNewPassword: req.body.confirmNewPassword,
       };
-
+      //Password checks
       if (setPassword.password === setPassword.confirmNewPassword) {
         bcrypt.hash(setPassword.password, 10).then((hash) => {
           User.update(
@@ -294,6 +294,7 @@ exports.resetPassword = (req, res, next) => {
               res.status(400).json({ error });
             });
         });
+        //Password not identic
       } else {
         return res
           .status(400)

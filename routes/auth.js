@@ -1,7 +1,10 @@
+//Imports
 const express = require("express");
 const router = express.Router();
+
 //Controllers
 const authCtrl = require("../controllers/auth.js");
+
 //Routes
 router.post("/signup", authCtrl.signup);
 router.post("/login", authCtrl.login);

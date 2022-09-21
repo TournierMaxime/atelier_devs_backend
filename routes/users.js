@@ -1,10 +1,14 @@
+//Imports
 const express = require("express");
 const router = express.Router();
+
 //Controllers
 const usersCtrl = require("../controllers/users.js");
+
 //Middlewares
 const auth = require("../middlewares/auth.js");
 const multer = require("../middlewares/multer-config.js");
+
 //Routes
 router.get("/:id", usersCtrl.getOneUser);
 router.get("/", auth, usersCtrl.getAllUsers);

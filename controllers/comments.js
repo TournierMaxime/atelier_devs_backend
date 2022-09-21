@@ -1,3 +1,4 @@
+//Imports
 const dotenv = require("dotenv");
 dotenv.config();
 const { Sequelize, DataTypes } = require("sequelize");
@@ -5,22 +6,22 @@ const { sequelize } = require("../config/database.js");
 const Users = require("../models/Users.js")(sequelize, DataTypes);
 const Comments = require("../models/Comments.js")(sequelize, DataTypes);
 
-//Création de commentaire
+//Comments creation
 exports.createComment = (req, res, next) => {
-  //Jointure de Comments et Users
+  //Join
   Comments.belongsTo(Users);
   Users.hasMany(Comments);
-
+  //If empty
   if (req.body.message === "") {
     return res.status(400).json({ error: "Votre commentaire est vide" });
   }
-  //Création des objets
+  //Object
   Comments.create({
     message: req.body.message,
     postId: req.params.postId,
     userId: req.auth.userId,
   })
-    //Création du commentaire
+    //Creation
     .then(() => {
       res.status(201).json({ message: "Commentaire crée" });
     })
@@ -29,22 +30,28 @@ exports.createComment = (req, res, next) => {
       res.status(400).json({ error });
     });
 };
-//Récupération de tous les commentaires d'un membre
+
+//Get all comments of a single post
 exports.getAllComments = (req, res, next) => {
+  //Pagination
   const pageAsNumber = Number(req.query.page);
   const sizeAsNumber = Number(req.query.size);
   let page = 0;
   let size = 10;
+
   if (!Number.isNaN(pageAsNumber) && pageAsNumber >= 0) {
     page = pageAsNumber;
   }
+
   if (!Number.isNaN(sizeAsNumber) && sizeAsNumber > 0 && sizeAsNumber < 10) {
     size = sizeAsNumber;
   }
-  //Jointure de Comments et Users
+
+  //Join
   Comments.belongsTo(Users);
   Users.hasMany(Comments);
-  //Data qui seront retournées
+
+  //Datas
   const options = {
     where: { postId: req.params.postId },
     distinct: true,
@@ -58,7 +65,7 @@ exports.getAllComments = (req, res, next) => {
       attributes: ["firstname", "image"],
     },
   };
-  //Récupération des commentaires
+  //Retrieve comments
   Comments.findAndCountAll(options)
     .then((comments) => {
       res.status(200).json({
@@ -73,12 +80,14 @@ exports.getAllComments = (req, res, next) => {
         .json({ error: "Impossible de retrouver les commentaires" });
     });
 };
-//Récupération d'un commentaire
+
+//Get one comment of a post
 exports.getOneComment = (req, res, next) => {
-  //Jointure de Comments et Users
+  //Join
   Comments.belongsTo(Users);
   Users.hasMany(Comments);
-  //Data qui seront retournées
+
+  //Datas
   const options = {
     where: { postId: req.params.postId, id: req.params.id },
     attributes: ["id", "userId", "postId", "message", "created"],
@@ -89,6 +98,7 @@ exports.getOneComment = (req, res, next) => {
   };
   Comments.findOne(options)
     .then((comment) => {
+      //If not in database
       if (!comment) {
         return res.status(404).json({ error: "Commentaire non trouvé" });
       }
@@ -98,31 +108,38 @@ exports.getOneComment = (req, res, next) => {
       res.status(500).json(error);
     });
 };
-//Edition d'un commentaire
+
+//Update comment
 exports.editComment = (req, res, next) => {
   Comments.findOne({ where: { id: req.params.id } })
     .then((comment) => {
-      //Si l'utilisateur n'est pas l'auteur du commentaire = 403
+      //If not the author
       if (comment.userId !== req.auth.userId) {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
+      //If empty
       if (req.body.message === "") {
         return res.status(400).json({ error: "Votre commentaire est vide" });
       }
-      //Maj du commentaire
+      //Object
+      const commentObject = req.body
+        ? { message: req.body.message }
+        : { ...req.body };
+      //Updating
       comment
-        .update({ message: req.body.message, id: req.params.id })
+        .update({ ...commentObject, id: req.params.id })
         .then(() => res.status(200).json({ message: "Commentaire modifié" }));
     })
     .catch((error) => {
       res.status(404).json({ error });
     });
 };
-//Suppresion du commentaire
+
+//Delete a comment
 exports.deleteComment = (req, res, next) => {
   Comments.findOne({ where: { id: req.params.id } })
     .then((comment) => {
-      //Si l'utilisateur n'est pas l'auteur du commentaire = 403 ou non admin
+      //If not the author or not admin
       if (comment.userId !== req.auth.userId && req.auth.isAdmin === false) {
         return res.status(403).json({ error: "Accès non autorisé" });
       } else {

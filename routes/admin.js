@@ -1,13 +1,14 @@
-// LIBRAIRIES
+//Imports
 const express = require("express");
 const router = express.Router();
 
-// MIDDLEWARES
+//Middlewares
 const auth = require("../middlewares/auth.js");
 
-// CONTROLLERS
+//Controllers
 const roleCtrl = require("../controllers/admin.js");
-//ROUTES
+
+//Routes
 router.post("/:id/setRole", auth, roleCtrl.setRole);
 router.get("/comments", auth, roleCtrl.getAllComments);
 

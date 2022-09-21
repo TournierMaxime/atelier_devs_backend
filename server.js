@@ -1,8 +1,8 @@
-//constation de http et de app
+//Imports
 const http = require("http");
 const app = require("./app.js");
 
-//Fonction qui vérifie si le port est un nombre et supérieur à 0
+//Check if the port is a number > 0
 const normalizePort = (val) => {
   const port = Number(val);
 
@@ -15,11 +15,11 @@ const normalizePort = (val) => {
   return false;
 };
 
-//Utilisation d'un port spécifique ou du port 3000 par défaut si il n'est pas disponible
+//Uses of port 3000 or .env variable
 const port = normalizePort(process.env.PORT_SERVER || "3000");
 app.set("port", port);
 
-//Gestion des erreurs
+//Handle errors
 const errorHandler = (error) => {
   if (error.syscall !== "listen") {
     throw error;
@@ -41,10 +41,10 @@ const errorHandler = (error) => {
   }
 };
 
-//Crétion du serveur
+//Server creation
 const server = http.createServer(app);
 
-//Gestion des erreurs + écoute du port
+//Handle errors + listening server
 server.on("error", errorHandler);
 server.on("listening", () => {
   const address = server.address();

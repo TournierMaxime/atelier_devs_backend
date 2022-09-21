@@ -1,11 +1,12 @@
-//Importation de Sequelize et des modèles
+//Imports
 const { Sequelize, DataTypes } = require("sequelize");
 const Comments = require("../models/Comments.js");
 const Posts = require("../models/Posts.js");
 const Users = require("../models/Users.js");
 const dotenv = require("dotenv");
 dotenv.config();
-//Instancie sequelize + infos bdd
+
+//Sequelize instance
 const sequelize = new Sequelize(
   process.env.DATABASE,
   process.env.USER,
@@ -22,12 +23,13 @@ const sequelize = new Sequelize(
     },*/
   }
 );
-//Utilisation des modèles pour la sync
+
+//Uses of models
 const commentsModel = Comments(sequelize, DataTypes);
 const postsModel = Posts(sequelize, DataTypes);
 const usersModel = Users(sequelize, DataTypes);
 
-//Connexion bdd
+//Database connection
 function connectToDatabase(err) {
   if (err) {
     console.error(err);
@@ -36,7 +38,8 @@ function connectToDatabase(err) {
     console.log("Connection to database has been established successfully");
   }
 }
-//Sync de la bdd
+
+//Database sync
 function sync(err) {
   if (err) {
     console.log(err);

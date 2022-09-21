@@ -1,3 +1,4 @@
+//Regex
 exports.testFirstName = (firstname) => {
   const regexFirstName = /^[a-zA-Z\s-]{3,35}$/;
   return regexFirstName.test(firstname);

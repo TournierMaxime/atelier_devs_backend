@@ -1,9 +1,9 @@
+//Imports
 const dotenv = require("dotenv");
 dotenv.config();
 const nodemailer = require("nodemailer");
 
-// exporting an 'async' function here allows 'await' to be used
-// as the return value of this function.
+//Email send to the user
 exports.sendMail = async (to, content) => {
   // The credentials for the email account you want to send mail from.
   const credentials = {
@@ -11,7 +11,6 @@ exports.sendMail = async (to, content) => {
     port: 465,
     secure: true,
     auth: {
-      // These environment variables will be pulled from the .env file
       user: process.env.EMAIL_ADDRESS,
       pass: process.env.EMAIL_PASSWORD,
     },
@@ -26,24 +25,13 @@ exports.sendMail = async (to, content) => {
     to,
   };
 
-  // Combining the content and contacts into a single object that can
-  // be passed to Nodemailer.
+  // Combining the content and contacts into a single object that can be passed to Nodemailer.
   const email = Object.assign({}, content, contacts);
-
-  // This file is imported into the controller as 'sendEmail'. Because
-  // 'transporter.sendMail()' below returns a promise we can write code like this
-  // in the contoller when we are using the sendEmail() function.
-  //
-  //  sendEmail()
-  //   .then(() => doSomethingElse())
-  //
-  // If you are running into errors getting Nodemailer working, wrap the following
-  // line in a try/catch. Most likely is not loading the credentials properly in
-  // the .env file or failing to allow unsafe apps in your gmail settings.
 
   await transporter.sendMail(email);
 };
 
+//Body of the email
 exports.confirmedAccount = {
   confirm: (id) => ({
     subject: "Inscription Atelier des Devs",
@@ -57,6 +45,7 @@ exports.confirmedAccount = {
   }),
 };
 
+//Messages depends on the situation
 exports.messages = {
   confirm:
     "Un email de confirmation vous a été envoyé. Pensez à vérifier vos spams.",
