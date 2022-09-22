@@ -174,12 +174,6 @@ exports.confirmEmail = (req, res) => {
           .status(200)
           .json({ message: emailSignup.messages.couldNotFind });
       }
-      //If already confirmed
-      if (user.isConfirmed === true) {
-        return res
-          .status(200)
-          .json({ message: emailSignup.messages.alreadyConfirmed });
-      }
       //If confirmed value passed to true
       user
         .update({ isConfirmed: true }, { where: { id: req.params.id } })
@@ -280,7 +274,6 @@ exports.resetPassword = (req, res, next) => {
           User.update(
             {
               password: hash,
-              id: req.params.id,
             },
             { where: { id: user.userId } }
           )

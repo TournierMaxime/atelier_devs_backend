@@ -187,7 +187,10 @@ exports.deleteOneUser = (req, res, next) => {
             //Find the user
             Users.findOne({ where: { id: req.params.id } }).then((user) => {
               //Delete the account and destroy images linked to the account
-              if (user.image !== "") {
+              if (
+                user.image !==
+                `${process.env.URLSERVER}/images/user/default.png`
+              ) {
                 const filename = user.image.split("/images/user/")[1];
                 fs.unlink(`images/user/${filename}`, () => {
                   user

@@ -118,16 +118,12 @@ exports.editComment = (req, res, next) => {
         return res.status(403).json({ error: "Accès non autorisé" });
       }
       //If empty
-      if (req.body.message === "") {
+      if (req.body.message === null) {
         return res.status(400).json({ error: "Votre commentaire est vide" });
       }
-      //Object
-      const commentObject = req.body
-        ? { message: req.body.message }
-        : { ...req.body };
       //Updating
       comment
-        .update({ ...commentObject, id: req.params.id })
+        .update({ message: req.body.message, id: req.params.id })
         .then(() => res.status(200).json({ message: "Commentaire modifié" }));
     })
     .catch((error) => {
